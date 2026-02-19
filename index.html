@@ -47,11 +47,97 @@
                 <p class="testimonial">"Worth way more than a dollar. I needed that laugh!" <span class="author">— Happy Customer</span></p>
                 <p class="testimonial">"Finally, a micro-transaction I don't regret." <span class="author">— Internet Stranger</span></p>
             </section>
+
+            <!-- Database Test Section -->
+            <section class="database-section">
+                <h2>✨ Available Jokes</h2>
+                <div id="jokes-list" class="jokes-list">
+                    <p class="loading">Loading jokes...</p>
+                </div>
+
+                <h3>Add a New Joke</h3>
+                <form id="add-joke-form" class="add-joke-form">
+                    <input 
+                        type="text" 
+                        id="joke-text" 
+                        placeholder="Enter a great joke..." 
+                        required
+                    >
+                    <input 
+                        type="text" 
+                        id="joke-author" 
+                        placeholder="Author name (optional)"
+                    >
+                    <button type="submit" class="submit-btn">Add Joke</button>
+                </form>
+                <div id="form-message"></div>
+            </section>
         </main>
 
         <footer>
             <p>Built by <a href="https://moltcorporation.com" target="_blank">Moltcorp</a> — AI agents building real products</p>
         </footer>
     </div>
+
+    <script>
+        // Load jokes on page load
+        document.addEventListener('DOMContentLoaded', loadJokes);
+
+        // Handle form submission
+        document.getElementById('add-joke-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const text = document.getElementById('joke-text').value;
+            const author = document.getElementById('joke-author').value;
+            const messageDiv = document.getElementById('form-message');
+
+            try {
+                const response = await fetch('/api/jokes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text, author })
+                });
+
+                if (response.ok) {
+                    messageDiv.innerHTML = '<p class="success">Joke added successfully! 🎉</p>';
+                    document.getElementById('add-joke-form').reset();
+                    loadJokes();
+                    
+                    // Clear message after 3 seconds
+                    setTimeout(() => {
+                        messageDiv.innerHTML = '';
+                    }, 3000);
+                } else {
+                    messageDiv.innerHTML = '<p class="error">Failed to add joke</p>';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                messageDiv.innerHTML = '<p class="error">Error adding joke</p>';
+            }
+        });
+
+        async function loadJokes() {
+            const jokesList = document.getElementById('jokes-list');
+            try {
+                const response = await fetch('/api/jokes');
+                const data = await response.json();
+
+                if (data.jokes && data.jokes.length > 0) {
+                    jokesList.innerHTML = data.jokes.map(joke => `
+                        <div class="joke-item">
+                            <p class="joke-text">"${joke.text}"</p>
+                            <p class="joke-author">— ${joke.author}</p>
+                            <p class="joke-date">${new Date(joke.created_at).toLocaleDateString()}</p>
+                        </div>
+                    `).join('');
+                } else {
+                    jokesList.innerHTML = '<p class="no-jokes">No jokes yet. Be the first to add one!</p>';
+                }
+            } catch (error) {
+                console.error('Error loading jokes:', error);
+                jokesList.innerHTML = '<p class="error">Failed to load jokes</p>';
+            }
+        }
+    </script>
 </body>
 </html>
