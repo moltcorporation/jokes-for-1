@@ -10,16 +10,39 @@
 <body>
     <div class="container">
         <header>
-            <div class="logo" id="page-logo">⏳</div>
+            <div class="logo" id="page-logo">😂</div>
             <h1>Jokes for $1</h1>
         </header>
 
         <main id="main-content">
+            <!-- State: enter email -->
+            <div id="state-enter-email" class="state-panel" style="display:none">
+                <h2>Enter your email to claim your joke</h2>
+                <p class="tagline">Use the same email you paid with and we'll verify your $1 payment instantly.</p>
+                <div class="email-form" style="margin-top:28px">
+                    <input
+                        type="email"
+                        id="claim-email-input"
+                        class="email-input"
+                        placeholder="you@example.com"
+                        autocomplete="email"
+                    />
+                    <p class="email-hint" id="claim-email-hint" aria-live="polite"></p>
+                </div>
+                <button class="cta-button" id="claim-button" disabled onclick="handleClaimClick()" style="margin-top:16px">
+                    Claim my joke →
+                </button>
+                <br>
+                <a href="index.html" class="secondary-link" style="display:inline-block;margin-top:20px">← Haven't paid yet? Get a joke for $1</a>
+            </div>
+
             <!-- State: loading -->
-            <div id="state-loading" class="state-panel">
+            <div id="state-loading" class="state-panel" style="display:none">
                 <h2>Verifying your payment…</h2>
-                <p class="tagline">Hang tight, we're confirming with Stripe.</p>
+                <p class="tagline" id="loading-email-label"></p>
                 <div class="spinner"></div>
+                <br>
+                <a href="#" class="secondary-link" onclick="resetToEmailEntry(); return false;" style="display:inline-block;margin-top:20px">Wrong email? Try a different one</a>
             </div>
 
             <!-- State: joke revealed -->
@@ -36,21 +59,15 @@
             <!-- State: not paid -->
             <div id="state-not-paid" class="state-panel" style="display:none">
                 <div class="sad-emoji">😬</div>
-                <h2>Payment not found yet</h2>
-                <p class="tagline">It may take a moment for Stripe to confirm. Try again in a few seconds, or head back and complete the payment.</p>
+                <h2>Payment not found</h2>
+                <p class="tagline" id="not-paid-label"></p>
                 <button class="cta-button" onclick="retryCheck()" id="retry-btn" style="margin-top:20px">
                     Try again
                 </button>
                 <br>
-                <a href="index.html" class="secondary-link" style="display:inline-block;margin-top:16px">← Back to payment page</a>
-            </div>
-
-            <!-- State: no email -->
-            <div id="state-no-email" class="state-panel" style="display:none">
-                <div class="sad-emoji">🤔</div>
-                <h2>We don't know who you are</h2>
-                <p class="tagline">It looks like you landed here directly. Head back, enter your email, and pay $1 to get your joke!</p>
-                <a href="index.html" class="cta-button" style="display:inline-block;margin-top:20px;text-decoration:none">← Back to payment page</a>
+                <a href="#" class="secondary-link" onclick="resetToEmailEntry(); return false;" style="display:inline-block;margin-top:16px">Try a different email</a>
+                <br>
+                <a href="index.html" class="secondary-link" style="display:inline-block;margin-top:10px">← Back to payment page</a>
             </div>
         </main>
 
@@ -65,74 +82,32 @@
         const MAX_RETRIES = 3;
 
         const JOKES = [
-            {
-                setup: "Why don't scientists trust atoms?",
-                punchline: "Because they make up everything!"
-            },
-            {
-                setup: "I told my wife she should embrace her mistakes.",
-                punchline: "She gave me a hug."
-            },
-            {
-                setup: "Why did the scarecrow win an award?",
-                punchline: "Because he was outstanding in his field."
-            },
-            {
-                setup: "I'm reading a book about anti-gravity.",
-                punchline: "It's impossible to put down."
-            },
-            {
-                setup: "Why do cows wear bells?",
-                punchline: "Because their horns don't work."
-            },
-            {
-                setup: "What do you call a fake noodle?",
-                punchline: "An impasta."
-            },
-            {
-                setup: "I asked the librarian if they had books about paranoia.",
-                punchline: "She whispered, \"They're right behind you.\""
-            },
-            {
-                setup: "Why can't you give Elsa a balloon?",
-                punchline: "Because she'll let it go."
-            },
-            {
-                setup: "I used to hate facial hair.",
-                punchline: "But then it grew on me."
-            },
-            {
-                setup: "What do you call cheese that isn't yours?",
-                punchline: "Nacho cheese."
-            },
-            {
-                setup: "Why do programmers prefer dark mode?",
-                punchline: "Because light attracts bugs."
-            },
-            {
-                setup: "I told my doctor I broke my arm in two places.",
-                punchline: "He told me to stop going to those places."
-            },
-            {
-                setup: "Why did the bicycle fall over?",
-                punchline: "Because it was two-tired."
-            },
-            {
-                setup: "What's the best thing about Switzerland?",
-                punchline: "I don't know, but the flag is a big plus."
-            },
-            {
-                setup: "How do you organize a space party?",
-                punchline: "You planet."
-            }
+            { setup: "Why don't scientists trust atoms?", punchline: "Because they make up everything!" },
+            { setup: "I told my wife she should embrace her mistakes.", punchline: "She gave me a hug." },
+            { setup: "Why did the scarecrow win an award?", punchline: "Because he was outstanding in his field." },
+            { setup: "I'm reading a book about anti-gravity.", punchline: "It's impossible to put down." },
+            { setup: "Why do cows wear bells?", punchline: "Because their horns don't work." },
+            { setup: "What do you call a fake noodle?", punchline: "An impasta." },
+            { setup: "I asked the librarian if they had books about paranoia.", punchline: "She whispered, \"They're right behind you.\"" },
+            { setup: "Why can't you give Elsa a balloon?", punchline: "Because she'll let it go." },
+            { setup: "I used to hate facial hair.", punchline: "But then it grew on me." },
+            { setup: "What do you call cheese that isn't yours?", punchline: "Nacho cheese." },
+            { setup: "Why do programmers prefer dark mode?", punchline: "Because light attracts bugs." },
+            { setup: "I told my doctor I broke my arm in two places.", punchline: "He told me to stop going to those places." },
+            { setup: "Why did the bicycle fall over?", punchline: "Because it was two-tired." },
+            { setup: "What's the best thing about Switzerland?", punchline: "I don't know, but the flag is a big plus." },
+            { setup: "How do you organize a space party?", punchline: "You planet." }
         ];
+
+        let currentEmail = null;
+        let retryCount = 0;
 
         function getRandomJoke() {
             return JOKES[Math.floor(Math.random() * JOKES.length)];
         }
 
         function showState(id) {
-            ['state-loading','state-joke','state-not-paid','state-no-email'].forEach(s => {
+            ['state-enter-email', 'state-loading', 'state-joke', 'state-not-paid'].forEach(s => {
                 document.getElementById(s).style.display = (s === id) ? '' : 'none';
             });
         }
@@ -142,13 +117,31 @@
             document.getElementById('joke-setup').textContent = joke.setup;
             document.getElementById('joke-punchline').textContent = joke.punchline;
             document.getElementById('page-logo').textContent = '😂';
+            localStorage.setItem('jokes_email', currentEmail);
             showState('state-joke');
         }
 
-        let retryCount = 0;
+        function resetToEmailEntry() {
+            retryCount = 0;
+            const btn = document.getElementById('retry-btn');
+            if (btn) { btn.disabled = false; btn.textContent = 'Try again'; }
+            showState('state-enter-email');
+            // Pre-fill with last-used email
+            if (currentEmail) {
+                document.getElementById('claim-email-input').value = currentEmail;
+                validateClaimEmail();
+            }
+        }
 
         async function checkPayment(email) {
+            currentEmail = email;
+            retryCount = 0;
+            document.getElementById('loading-email-label').textContent = 'Checking payment for ' + email + '…';
             showState('state-loading');
+            await doCheck(email);
+        }
+
+        async function doCheck(email) {
             try {
                 const url = `${API_BASE}/payments/check?product_id=${encodeURIComponent(PRODUCT_ID)}&email=${encodeURIComponent(email)}`;
                 const resp = await fetch(url);
@@ -157,34 +150,75 @@
                 if (data.active === true) {
                     showJoke();
                 } else {
+                    document.getElementById('not-paid-label').textContent =
+                        'No completed payment found for ' + email + '. Make sure you used this email at checkout.';
+                    document.getElementById('retry-btn').disabled = false;
+                    document.getElementById('retry-btn').textContent = 'Try again';
                     showState('state-not-paid');
                 }
             } catch (err) {
                 console.error('Payment check failed:', err);
+                document.getElementById('not-paid-label').textContent =
+                    'Something went wrong checking payment for ' + email + '. Please try again.';
                 showState('state-not-paid');
             }
         }
 
-        function retryCheck() {
+        async function retryCheck() {
             retryCount++;
             const btn = document.getElementById('retry-btn');
             if (retryCount >= MAX_RETRIES) {
                 btn.disabled = true;
-                btn.textContent = 'Still not found — try the payment page';
+                btn.textContent = 'Still not found';
             }
-            const email = localStorage.getItem('jokes_email');
-            if (email) checkPayment(email);
+            document.getElementById('loading-email-label').textContent = 'Checking payment for ' + currentEmail + '…';
+            showState('state-loading');
+            await doCheck(currentEmail);
         }
 
-        // Boot
-        window.addEventListener('DOMContentLoaded', function () {
-            const email = localStorage.getItem('jokes_email');
-            if (!email) {
-                document.getElementById('page-logo').textContent = '🤔';
-                showState('state-no-email');
-                return;
+        // Email input validation for claim form
+        function isValidEmail(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+
+        function validateClaimEmail() {
+            const val = document.getElementById('claim-email-input').value.trim();
+            const hint = document.getElementById('claim-email-hint');
+            const btn = document.getElementById('claim-button');
+            if (val.length === 0) {
+                btn.disabled = true;
+                hint.textContent = '';
+                hint.className = 'email-hint';
+            } else if (!isValidEmail(val)) {
+                btn.disabled = true;
+                hint.textContent = 'Please enter a valid email address.';
+                hint.className = 'email-hint hint-error';
+            } else {
+                btn.disabled = false;
+                hint.textContent = '✓ Looks good!';
+                hint.className = 'email-hint hint-ok';
             }
+        }
+
+        function handleClaimClick() {
+            const email = document.getElementById('claim-email-input').value.trim();
+            if (!isValidEmail(email)) return;
             checkPayment(email);
+        }
+
+        document.getElementById('claim-email-input').addEventListener('input', validateClaimEmail);
+        document.getElementById('claim-email-input').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') handleClaimClick();
+        });
+
+        // Boot: check localStorage first, otherwise show email entry form
+        window.addEventListener('DOMContentLoaded', function () {
+            const saved = localStorage.getItem('jokes_email');
+            if (saved) {
+                checkPayment(saved);
+            } else {
+                showState('state-enter-email');
+            }
         });
     </script>
 </body>
