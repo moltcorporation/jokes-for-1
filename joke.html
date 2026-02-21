@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Your joke is waiting — thanks for paying!">
+    <title>Your Joke — Jokes for $1</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo" id="page-logo">⏳</div>
+            <h1>Jokes for $1</h1>
+        </header>
+
+        <main id="main-content">
+            <!-- State: loading -->
+            <div id="state-loading" class="state-panel">
+                <h2>Verifying your payment…</h2>
+                <p class="tagline">Hang tight, we're confirming with Stripe.</p>
+                <div class="spinner"></div>
+            </div>
+
+            <!-- State: joke revealed -->
+            <div id="state-joke" class="state-panel" style="display:none">
+                <div class="joke-card">
+                    <div class="joke-badge">🎉 Your joke!</div>
+                    <p class="joke-setup" id="joke-setup"></p>
+                    <p class="joke-punchline" id="joke-punchline"></p>
+                </div>
+                <p class="joke-footer">Hope that made you smile 😄</p>
+                <a href="index.html" class="secondary-link">Want another one? Pay again →</a>
+            </div>
+
+            <!-- State: not paid -->
+            <div id="state-not-paid" class="state-panel" style="display:none">
+                <div class="sad-emoji">😬</div>
+                <h2>Payment not found yet</h2>
+                <p class="tagline">It may take a moment for Stripe to confirm. Try again in a few seconds, or head back and complete the payment.</p>
+                <button class="cta-button" onclick="retryCheck()" id="retry-btn" style="margin-top:20px">
+                    Try again
+                </button>
+                <br>
+                <a href="index.html" class="secondary-link" style="display:inline-block;margin-top:16px">← Back to payment page</a>
+            </div>
+
+            <!-- State: no email -->
+            <div id="state-no-email" class="state-panel" style="display:none">
+                <div class="sad-emoji">🤔</div>
+                <h2>We don't know who you are</h2>
+                <p class="tagline">It looks like you landed here directly. Head back, enter your email, and pay $1 to get your joke!</p>
+                <a href="index.html" class="cta-button" style="display:inline-block;margin-top:20px;text-decoration:none">← Back to payment page</a>
+            </div>
+        </main>
+
+        <footer>
+            <p>Built by <a href="https://moltcorporation.com" target="_blank">Moltcorp</a> — AI agents building real products</p>
+        </footer>
+    </div>
+
+    <script>
+        const PRODUCT_ID = '6b4a31f0-cb7d-4486-b907-b7217b377d25';
+        const API_BASE = 'https://moltcorporation.com/api/v1';
+        const MAX_RETRIES = 3;
+
+        const JOKES = [
+            {
+                setup: "Why don't scientists trust atoms?",
+                punchline: "Because they make up everything!"
+            },
+            {
+                setup: "I told my wife she should embrace her mistakes.",
+                punchline: "She gave me a hug."
+            },
+            {
+                setup: "Why did the scarecrow win an award?",
+                punchline: "Because he was outstanding in his field."
+            },
+            {
+                setup: "I'm reading a book about anti-gravity.",
+                punchline: "It's impossible to put down."
+            },
+            {
+                setup: "Why do cows wear bells?",
+                punchline: "Because their horns don't work."
+            },
+            {
+                setup: "What do you call a fake noodle?",
+                punchline: "An impasta."
+            },
+            {
+                setup: "I asked the librarian if they had books about paranoia.",
+                punchline: "She whispered, \"They're right behind you.\""
+            },
+            {
+                setup: "Why can't you give Elsa a balloon?",
+                punchline: "Because she'll let it go."
+            },
+            {
+                setup: "I used to hate facial hair.",
+                punchline: "But then it grew on me."
+            },
+            {
+                setup: "What do you call cheese that isn't yours?",
+                punchline: "Nacho cheese."
+            },
+            {
+                setup: "Why do programmers prefer dark mode?",
+                punchline: "Because light attracts bugs."
+            },
+            {
+                setup: "I told my doctor I broke my arm in two places.",
+                punchline: "He told me to stop going to those places."
+            },
+            {
+                setup: "Why did the bicycle fall over?",
+                punchline: "Because it was two-tired."
+            },
+            {
+                setup: "What's the best thing about Switzerland?",
+                punchline: "I don't know, but the flag is a big plus."
+            },
+            {
+                setup: "How do you organize a space party?",
+                punchline: "You planet."
+            }
+        ];
+
+        function getRandomJoke() {
+            return JOKES[Math.floor(Math.random() * JOKES.length)];
+        }
+
+        function showState(id) {
+            ['state-loading','state-joke','state-not-paid','state-no-email'].forEach(s => {
+                document.getElementById(s).style.display = (s === id) ? '' : 'none';
+            });
+        }
+
+        function showJoke() {
+            const joke = getRandomJoke();
+            document.getElementById('joke-setup').textContent = joke.setup;
+            document.getElementById('joke-punchline').textContent = joke.punchline;
+            document.getElementById('page-logo').textContent = '😂';
+            showState('state-joke');
+        }
+
+        let retryCount = 0;
+
+        async function checkPayment(email) {
+            showState('state-loading');
+            try {
+                const url = `${API_BASE}/payments/check?product_id=${encodeURIComponent(PRODUCT_ID)}&email=${encodeURIComponent(email)}`;
+                const resp = await fetch(url);
+                if (!resp.ok) throw new Error('API error: ' + resp.status);
+                const data = await resp.json();
+                if (data.active === true) {
+                    showJoke();
+                } else {
+                    showState('state-not-paid');
+                }
+            } catch (err) {
+                console.error('Payment check failed:', err);
+                showState('state-not-paid');
+            }
+        }
+
+        function retryCheck() {
+            retryCount++;
+            const btn = document.getElementById('retry-btn');
+            if (retryCount >= MAX_RETRIES) {
+                btn.disabled = true;
+                btn.textContent = 'Still not found — try the payment page';
+            }
+            const email = localStorage.getItem('jokes_email');
+            if (email) checkPayment(email);
+        }
+
+        // Boot
+        window.addEventListener('DOMContentLoaded', function () {
+            const email = localStorage.getItem('jokes_email');
+            if (!email) {
+                document.getElementById('page-logo').textContent = '🤔';
+                showState('state-no-email');
+                return;
+            }
+            checkPayment(email);
+        });
+    </script>
+</body>
+</html>

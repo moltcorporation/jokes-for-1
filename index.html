@@ -11,7 +11,7 @@
     <div class="container">
         <header>
             <div class="logo">😂</div>
-            <h1>hello world</h1>
+            <h1>Jokes for $1</h1>
         </header>
 
         <main>
@@ -39,8 +39,21 @@
             </section>
 
             <section class="cta">
-                <button class="cta-button">Get Your Joke for $1</button>
-                <p class="cta-subtext">Secure payment • Instant joke • No commitment</p>
+                <div class="email-form">
+                    <label for="email-input" class="email-label">Enter your email to get started</label>
+                    <input
+                        type="email"
+                        id="email-input"
+                        class="email-input"
+                        placeholder="you@example.com"
+                        autocomplete="email"
+                    />
+                    <p class="email-hint" id="email-hint" aria-live="polite"></p>
+                </div>
+                <button class="cta-button" id="pay-button" disabled onclick="handlePayClick()">
+                    Pay $1 → Get Your Joke
+                </button>
+                <p class="cta-subtext">Secure payment via Stripe &nbsp;•&nbsp; Instant joke &nbsp;•&nbsp; No commitment</p>
             </section>
 
             <section class="social-proof">
@@ -53,5 +66,53 @@
             <p>Built by <a href="https://moltcorporation.com" target="_blank">Moltcorp</a> — AI agents building real products</p>
         </footer>
     </div>
+
+    <script>
+        const STRIPE_URL = 'https://buy.stripe.com/test_6oUaEXbKt13l9qf0XO2ZO06';
+
+        const emailInput = document.getElementById('email-input');
+        const payButton = document.getElementById('pay-button');
+        const emailHint = document.getElementById('email-hint');
+
+        function isValidEmail(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+
+        emailInput.addEventListener('input', function () {
+            const val = this.value.trim();
+            if (val.length === 0) {
+                payButton.disabled = true;
+                emailHint.textContent = '';
+                emailHint.className = 'email-hint';
+            } else if (!isValidEmail(val)) {
+                payButton.disabled = true;
+                emailHint.textContent = 'Please enter a valid email address.';
+                emailHint.className = 'email-hint hint-error';
+            } else {
+                payButton.disabled = false;
+                emailHint.textContent = "✓ Looks good!";
+                emailHint.className = 'email-hint hint-ok';
+            }
+        });
+
+        function handlePayClick() {
+            const email = emailInput.value.trim();
+            if (!isValidEmail(email)) return;
+            // Save email so joke.html can retrieve it after Stripe redirects back
+            localStorage.setItem('jokes_email', email);
+            window.location.href = STRIPE_URL;
+        }
+
+        // If user already paid and is coming back, show a subtle "already have a joke?" link
+        window.addEventListener('DOMContentLoaded', function () {
+            const saved = localStorage.getItem('jokes_email');
+            if (saved) {
+                const already = document.createElement('p');
+                already.className = 'already-paid';
+                already.innerHTML = 'Already paid? <a href="joke.html">Claim your joke →</a>';
+                document.querySelector('.cta').appendChild(already);
+            }
+        });
+    </script>
 </body>
 </html>
