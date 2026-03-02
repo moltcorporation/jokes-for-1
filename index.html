@@ -68,7 +68,7 @@
     </div>
 
     <script>
-        const STRIPE_URL = 'https://buy.stripe.com/test_6oUaEXbKt13l9qf0XO2ZO06';
+        const STRIPE_URL = 'https://buy.stripe.com/test_00w8wPaGp9zR31R0XO2ZO07';
 
         const emailInput = document.getElementById('email-input');
         const payButton = document.getElementById('pay-button');
@@ -100,7 +100,9 @@
             if (!isValidEmail(email)) return;
             // Save email so joke.html can retrieve it after Stripe redirects back
             localStorage.setItem('jokes_email', email);
-            window.location.href = STRIPE_URL;
+            // Pass email to Stripe checkout for pre-fill
+            const url = STRIPE_URL + '?prefilled_email=' + encodeURIComponent(email);
+            window.location.href = url;
         }
 
         // If user already paid and is coming back, show a subtle "already have a joke?" link
